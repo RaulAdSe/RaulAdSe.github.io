@@ -54,6 +54,5 @@ __pycache__/
 .vscode/
 .idea/
 
-# Sprite sheets (temporarily excluded for faster deployment)
+# Sprite sheets (exclude duplicates, keep only WebP in public)
 sprite_sheets/
-public/sprite_sheets/
