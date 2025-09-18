@@ -18,7 +18,7 @@ export default function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           {/* Left column: hero + why content */}
           <div className="lg:col-span-2">
-            <div className="flex flex-col md:flex-row md:items-center md:gap-6 mb-6">
+            <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6 mb-6">
           {/* Profile Image */}
           <div className="flex-shrink-0 mb-6 md:mb-0 mx-auto md:mx-0">
               {/* Mobile-sized portrait */}
@@ -26,8 +26,8 @@ export default function Home() {
                 <SpriteSheetMosaicImageFixed
                   src="/profile_3.png"
                   alt="Profile made from dataset images"
-                  width={140}
-                  height={206}
+                  width={220}
+                  height={325}
                   useCifarMosaic={true}
                   mosaicTilesPath="/sprite_sheets"
                 />
