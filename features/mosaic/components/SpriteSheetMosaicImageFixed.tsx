@@ -355,17 +355,24 @@ export default function SpriteSheetMosaicImageFixed({
     const displayWidth = width;
     const displayHeight = height;
     
-    // Detect browser for quality optimization
+    // Comprehensive browser and device detection for quality optimization
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     const devicePixelRatio = window.devicePixelRatio || 1;
+    
+    // Detect real mobile devices (not just small viewport)
+    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                          (window.innerWidth <= 768 && devicePixelRatio >= 2);
     
     let canvasScale;
     if (isSafari) {
       // Safari: Keep current stable quality (no changes)
       canvasScale = 1;
+    } else if (isMobileDevice) {
+      // Mobile: Ultra-high resolution to overcome mobile browser smoothing
+      canvasScale = Math.min(15, devicePixelRatio * 5); // Up to 15x scale for mobile
     } else {
-      // Chrome/Firefox: Higher resolution for better tile quality
-      canvasScale = Math.min(3, devicePixelRatio * 1.5); // 1.5-3x scale
+      // Desktop: Current scaling works well
+      canvasScale = Math.min(3, devicePixelRatio * 1.5); // Up to 3x scale
     }
     
     const canvasWidth = Math.floor(displayWidth * canvasScale);
@@ -402,16 +409,27 @@ export default function SpriteSheetMosaicImageFixed({
     // Clear zoom canvas
     zoomCtx.clearRect(0, 0, canvasWidth, canvasHeight);
 
-    // Calculate tile size based on canvas resolution - higher for Chrome/Firefox
+    // Calculate tile size based on device capabilities - mobile gets huge boost
     const baseTileSize = (canvasWidth * zoomFactor) / mosaicWidth;
-    const maxTileSize = isSafari ? 50 : 120; // Safari: 50px, Chrome/Firefox: 120px
+    let maxTileSize;
+    if (isSafari) {
+      maxTileSize = 50; // Safari: Conservative for stability
+    } else if (isMobileDevice) {
+      maxTileSize = 400; // Mobile: Huge tiles for ultra-sharp detail
+    } else {
+      maxTileSize = 120; // Desktop: Current proven setting
+    }
     const zoomTileSize = Math.max(8, Math.min(maxTileSize, baseTileSize));
     
-    console.log(`🔍 Canvas zoom rendering (${isSafari ? 'Safari' : 'Chrome/Firefox'}):`, {
+    const deviceType = isSafari ? 'Safari' : isMobileDevice ? 'Mobile' : 'Desktop';
+    console.log(`🔍 Canvas zoom rendering (${deviceType}):`, {
       browser: isSafari ? 'Safari' : 'Chrome/Firefox',
+      deviceType,
+      isMobileDevice,
       canvasScale,
       maxTileSize,
       zoomTileSize,
+      devicePixelRatio,
       displaySize: { width: displayWidth, height: displayHeight },
       canvasSize: { width: canvasWidth, height: canvasHeight }
     });
@@ -528,12 +546,23 @@ export default function SpriteSheetMosaicImageFixed({
               if (ctx) {
                 el.width = width;
                 el.height = height;
-                // High-quality smooth scaling
-                ctx.imageSmoothingEnabled = true;
-                if ('imageSmoothingQuality' in ctx) {
-                  (ctx as any).imageSmoothingQuality = 'high';
+                
+                // Mobile-specific sharp rendering to prevent blur
+                const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                                      (window.innerWidth <= 768 && window.devicePixelRatio >= 2);
+                
+                if (isMobileDevice) {
+                  // Mobile: Disable smoothing for sharp tile rendering
+                  ctx.imageSmoothingEnabled = false;
+                } else {
+                  // Desktop: High-quality smooth scaling
+                  ctx.imageSmoothingEnabled = true;
+                  if ('imageSmoothingQuality' in ctx) {
+                    (ctx as any).imageSmoothingQuality = 'high';
+                  }
                 }
-                // Scale down high-res canvas to display size for crisp rendering
+                
+                // Scale down high-res canvas to display size
                 ctx.drawImage(zoomCanvas, 0, 0, zoomCanvas.width, zoomCanvas.height, 0, 0, width, height);
               }
             }
@@ -545,7 +574,10 @@ export default function SpriteSheetMosaicImageFixed({
             position: 'absolute',
             top: 0,
             left: 0,
-            imageRendering: 'auto', // High-quality smooth rendering
+            imageRendering: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                           (window.innerWidth <= 768 && window.devicePixelRatio >= 2)
+                           ? 'crisp-edges'  // Mobile: Sharp rendering
+                           : 'auto',        // Desktop: Smooth rendering
             opacity: 1,
             transition: 'opacity 0.2s ease-out',
             backfaceVisibility: 'hidden',
