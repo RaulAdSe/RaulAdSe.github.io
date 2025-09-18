@@ -311,7 +311,7 @@ export default function SpriteSheetMosaicImageFixed({
       if ('imageSmoothingQuality' in ctx) {
         (ctx as any).imageSmoothingQuality = 'high';
       }
-      // Force high-quality rendering for mobile during spiral loading
+      // Force high-quality rendering for mobile
       ctx.globalCompositeOperation = 'source-over';
       console.log('📱 Mobile: High-quality progressive rendering enabled');
     }
@@ -381,8 +381,8 @@ export default function SpriteSheetMosaicImageFixed({
       // Safari: Keep current stable quality (no changes)
       canvasScale = 1;
     } else if (isMobileDevice) {
-      // Mobile: Moderate high resolution to prevent double-downscaling quality loss
-      canvasScale = Math.min(4, devicePixelRatio * 2); // Reduced from 15x to 4x for better quality
+      // Mobile: High resolution for crisp zoom quality
+      canvasScale = Math.min(10, devicePixelRatio * 4); // Increased from 4x to 10x for better quality
     } else {
       // Desktop: Current scaling works well
       canvasScale = Math.min(3, devicePixelRatio * 1.5); // Up to 3x scale
@@ -419,14 +419,19 @@ export default function SpriteSheetMosaicImageFixed({
       (zoomCtx as any).imageSmoothingQuality = 'high';
     }
     
-    // Mobile-specific enhanced zoom quality during loading
+    // Mobile-specific enhanced zoom quality optimizations
     if (isMobileDevice) {
-      // Force highest quality rendering for mobile zoom during spiral loading
+      // Force highest quality rendering for mobile zoom
       zoomCtx.globalCompositeOperation = 'source-over';
       if ('textRenderingOptimization' in zoomCtx) {
         (zoomCtx as any).textRenderingOptimization = 'optimizeQuality';
       }
-      console.log('📱 Mobile: Enhanced zoom quality during loading enabled');
+      // Additional mobile rendering optimizations
+      zoomCtx.globalAlpha = 1.0;
+      if ('filter' in zoomCtx) {
+        (zoomCtx as any).filter = 'none';
+      }
+      console.log('📱 Mobile: Enhanced zoom quality optimizations enabled');
     }
 
     // Clear zoom canvas
@@ -438,7 +443,7 @@ export default function SpriteSheetMosaicImageFixed({
     if (isSafari) {
       maxTileSize = 50; // Safari: Conservative for stability
     } else if (isMobileDevice) {
-      maxTileSize = 80; // Mobile: Reasonable size to prevent over-scaling quality loss
+      maxTileSize = 140; // Mobile: Higher quality tile size for better zoom detail
     } else {
       maxTileSize = 120; // Desktop: Current proven setting
     }
@@ -575,8 +580,11 @@ export default function SpriteSheetMosaicImageFixed({
                                       (window.innerWidth <= 768 && window.devicePixelRatio >= 2);
                 
                 if (isMobileDevice) {
-                  // Mobile: Disable smoothing for sharp tile rendering
-                  ctx.imageSmoothingEnabled = false;
+                  // Mobile: Enable high-quality smooth rendering for better zoom quality
+                  ctx.imageSmoothingEnabled = true;
+                  if ('imageSmoothingQuality' in ctx) {
+                    (ctx as any).imageSmoothingQuality = 'high';
+                  }
                 } else {
                   // Desktop: High-quality smooth scaling
                   ctx.imageSmoothingEnabled = true;
@@ -597,10 +605,7 @@ export default function SpriteSheetMosaicImageFixed({
             position: 'absolute',
             top: 0,
             left: 0,
-            imageRendering: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-                           (window.innerWidth <= 768 && window.devicePixelRatio >= 2)
-                           ? 'crisp-edges'  // Mobile: Sharp rendering
-                           : 'auto',        // Desktop: Smooth rendering
+            imageRendering: 'auto', // Use smooth rendering for all devices
             opacity: 1,
             transition: 'opacity 0.2s ease-out',
             backfaceVisibility: 'hidden',
