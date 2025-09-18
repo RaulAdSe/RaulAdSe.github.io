@@ -438,7 +438,7 @@ export default function SpriteSheetMosaicImageFixed({
     if (isSafari) {
       maxTileSize = 50; // Safari: Conservative for stability
     } else if (isMobileDevice) {
-      maxTileSize = 400; // Mobile: Huge tiles for ultra-sharp detail
+      maxTileSize = 80; // Mobile: Reasonable size to prevent over-scaling quality loss
     } else {
       maxTileSize = 120; // Desktop: Current proven setting
     }
