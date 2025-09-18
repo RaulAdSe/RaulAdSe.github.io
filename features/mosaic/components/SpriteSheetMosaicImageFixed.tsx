@@ -381,8 +381,8 @@ export default function SpriteSheetMosaicImageFixed({
       // Safari: Keep current stable quality (no changes)
       canvasScale = 1;
     } else if (isMobileDevice) {
-      // Mobile: Ultra-high resolution to overcome mobile browser smoothing
-      canvasScale = Math.min(15, devicePixelRatio * 5); // Up to 15x scale for mobile
+      // Mobile: Moderate high resolution to prevent double-downscaling quality loss
+      canvasScale = Math.min(4, devicePixelRatio * 2); // Reduced from 15x to 4x for better quality
     } else {
       // Desktop: Current scaling works well
       canvasScale = Math.min(3, devicePixelRatio * 1.5); // Up to 3x scale
