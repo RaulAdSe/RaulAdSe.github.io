@@ -418,6 +418,16 @@ export default function SpriteSheetMosaicImageFixed({
     if ('imageSmoothingQuality' in zoomCtx) {
       (zoomCtx as any).imageSmoothingQuality = 'high';
     }
+    
+    // Mobile-specific enhanced zoom quality during loading
+    if (isMobileDevice) {
+      // Force highest quality rendering for mobile zoom during spiral loading
+      zoomCtx.globalCompositeOperation = 'source-over';
+      if ('textRenderingOptimization' in zoomCtx) {
+        (zoomCtx as any).textRenderingOptimization = 'optimizeQuality';
+      }
+      console.log('📱 Mobile: Enhanced zoom quality during loading enabled');
+    }
 
     // Clear zoom canvas
     zoomCtx.clearRect(0, 0, canvasWidth, canvasHeight);
