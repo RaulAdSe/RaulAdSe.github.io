@@ -303,6 +303,19 @@ export default function SpriteSheetMosaicImageFixed({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    // Mobile-specific high-quality settings for progressive rendering
+    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMobileDevice) {
+      // Apply mobile-optimized quality settings during progressive loading
+      ctx.imageSmoothingEnabled = true;
+      if ('imageSmoothingQuality' in ctx) {
+        (ctx as any).imageSmoothingQuality = 'high';
+      }
+      // Force high-quality rendering for mobile during spiral loading
+      ctx.globalCompositeOperation = 'source-over';
+      console.log('📱 Mobile: High-quality progressive rendering enabled');
+    }
+
     // Calculate tile size based on current canvas dimensions
     const tileDisplaySize = Math.min(
       canvas.width / spriteMetadata.original_metadata.width,
