@@ -59,11 +59,27 @@ export default function SpriteSheetMosaicImageFixed({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
-  // Minimal state - only 3 variables
+  // Minimal state - WebP detection + loading
   const [spriteMetadata, setSpriteMetadata] = useState<SpriteMetadata | null>(null);
   const [loadedSheets, setLoadedSheets] = useState<Map<string, HTMLImageElement>>(new Map());
+  const [renderedSheets, setRenderedSheets] = useState<Set<string>>(new Set());
+  const [supportsWebP, setSupportsWebP] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
+
+  // Universal WebP detection for all browsers
+  useEffect(() => {
+    const checkWebPSupport = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1;
+      canvas.height = 1;
+      const dataURL = canvas.toDataURL('image/webp');
+      const isSupported = dataURL.startsWith('data:image/webp');
+      setSupportsWebP(isSupported);
+      console.log('🖼️ WebP support detected:', isSupported);
+    };
+    checkWebPSupport();
+  }, []);
 
   // Generate spiral loading order from center outward
   const generateSpiralOrder = (totalSheets: number): number[] => {
@@ -137,17 +153,35 @@ export default function SpriteSheetMosaicImageFixed({
           const sheet = metadata.sheets[sheetIndex];
           
           if (sheet) {
-            // Use PNG for universal compatibility
+            // Universal WebP loading with PNG fallback
+            const preferredFilename = supportsWebP ? sheet.filename_webp : sheet.filename_png;
+            const fallbackFilename = supportsWebP ? sheet.filename_png : sheet.filename_webp;
             const img = new globalThis.Image();
             
             await new Promise<void>((resolve) => {
               img.onload = () => {
-                sheetMap.set(sheet.filename_png, img);
+                sheetMap.set(preferredFilename, img);
                 setLoadedSheets(new Map(sheetMap)); // Trigger re-render
                 resolve();
               };
-              img.onerror = () => resolve(); // Continue even if one fails
-              img.src = `${mosaicTilesPath}/${sheet.filename_png}`;
+              
+              img.onerror = () => {
+                // Try fallback format if preferred format fails
+                console.warn(`Failed to load ${preferredFilename}, trying fallback ${fallbackFilename}`);
+                const fallbackImg = new globalThis.Image();
+                fallbackImg.onload = () => {
+                  sheetMap.set(fallbackFilename, img);
+                  setLoadedSheets(new Map(sheetMap));
+                  resolve();
+                };
+                fallbackImg.onerror = () => {
+                  console.error(`Failed to load both ${preferredFilename} and ${fallbackFilename}`);
+                  resolve(); // Continue even if both fail
+                };
+                fallbackImg.src = `${mosaicTilesPath}/${fallbackFilename}`;
+              };
+              
+              img.src = `${mosaicTilesPath}/${preferredFilename}`;
             });
             
             // Small delay for visible spiral progression
@@ -163,24 +197,62 @@ export default function SpriteSheetMosaicImageFixed({
     };
 
     loadEverything();
-  }, [useCifarMosaic, mosaicTilesPath]);
+  }, [useCifarMosaic, mosaicTilesPath, supportsWebP]);
 
-  // Single effect: Render when everything is ready
+  // Initialize canvas once when metadata loads
   useEffect(() => {
-    if (!canvasRef.current || !spriteMetadata || loadedSheets.size === 0) return;
+    if (!canvasRef.current || !spriteMetadata) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Ultra-high resolution canvas setup for crisp tiles
+    // Browser-optimized canvas setup with high quality
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     const devicePixelRatio = window.devicePixelRatio || 1;
-    const scale = Math.max(30, 8000 / width) * devicePixelRatio; // Much higher resolution
-    const internalWidth = width * scale;
-    const internalHeight = height * scale;
     
-    canvas.width = internalWidth;
-    canvas.height = internalHeight;
+    // High-quality base resolution with browser-specific limits
+    let baseScale, maxCanvasSize, effectivePixelRatio;
+    
+    if (isSafari) {
+      // Safari-specific optimizations
+      baseScale = Math.max(20, 4000 / width);
+      maxCanvasSize = 4096; // Safari limit
+      effectivePixelRatio = Math.min(devicePixelRatio, 2); // Cap for stability
+    } else {
+      // Chrome/Firefox can handle higher quality
+      baseScale = Math.max(25, 6000 / width);
+      maxCanvasSize = 8192; // Higher limit for modern browsers
+      effectivePixelRatio = devicePixelRatio;
+    }
+    
+    let scale = baseScale * effectivePixelRatio;
+    let internalWidth = width * scale;
+    let internalHeight = height * scale;
+    
+    // Apply browser-specific canvas size limits
+    if (internalWidth > maxCanvasSize || internalHeight > maxCanvasSize) {
+      const downscale = Math.min(maxCanvasSize / internalWidth, maxCanvasSize / internalHeight);
+      internalWidth = Math.floor(internalWidth * downscale);
+      internalHeight = Math.floor(internalHeight * downscale);
+      console.log(`📱 ${isSafari ? 'Safari' : 'Modern browser'} canvas resize:`, { 
+        original: { width: width * scale, height: height * scale },
+        final: { width: internalWidth, height: internalHeight },
+        downscale 
+      });
+    }
+    
+    // Validate canvas dimensions before setting
+    try {
+      canvas.width = internalWidth;
+      canvas.height = internalHeight;
+      console.log('✅ Canvas created successfully:', { width: internalWidth, height: internalHeight });
+    } catch (error) {
+      console.error('❌ Canvas creation failed, using fallback size:', error);
+      // Fallback to much smaller size for Safari
+      canvas.width = width * 10;
+      canvas.height = height * 10;
+    }
 
     // High-quality rendering settings
     ctx.imageSmoothingEnabled = true; // Always smooth for better quality
@@ -188,19 +260,39 @@ export default function SpriteSheetMosaicImageFixed({
       (ctx as any).imageSmoothingQuality = 'high';
     }
     
-    // Clear canvas
-    ctx.clearRect(0, 0, internalWidth, internalHeight);
+    // Clear canvas once - no more clearing during loading!
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Reset rendered sheets when canvas is reinitialized
+    setRenderedSheets(new Set());
 
-    // Calculate tile size
+  }, [spriteMetadata, width, height]);
+
+  // Incremental render: Only draw newly loaded tiles
+  useEffect(() => {
+    if (!canvasRef.current || !spriteMetadata || loadedSheets.size === 0) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Calculate tile size based on current canvas dimensions
     const tileDisplaySize = Math.min(
-      internalWidth / spriteMetadata.original_metadata.width,
-      internalHeight / spriteMetadata.original_metadata.height
+      canvas.width / spriteMetadata.original_metadata.width,
+      canvas.height / spriteMetadata.original_metadata.height
     );
 
-    // Render all tiles
+    // Only render newly loaded sheets (incremental rendering)
+    const newlyRendered = new Set<string>();
     spriteMetadata.sheets.forEach(sheet => {
-      const spriteSheet = loadedSheets.get(sheet.filename_png);
-      if (spriteSheet && spriteSheet.complete) {
+      // Try to get the sprite sheet with either format
+      const webpFilename = sheet.filename_webp;
+      const pngFilename = sheet.filename_png;
+      const spriteSheet = loadedSheets.get(webpFilename) || loadedSheets.get(pngFilename);
+      const sheetKey = webpFilename || pngFilename;
+      
+      // Only draw if this sheet is loaded and hasn't been rendered yet
+      if (spriteSheet && spriteSheet.complete && !renderedSheets.has(sheetKey)) {
         sheet.tile_positions.forEach(tilePos => {
           const canvasX = tilePos.x * tileDisplaySize;
           const canvasY = tilePos.y * tileDisplaySize;
@@ -213,10 +305,16 @@ export default function SpriteSheetMosaicImageFixed({
             tileDisplaySize, tileDisplaySize
           );
         });
+        newlyRendered.add(sheetKey);
       }
     });
 
-  }, [spriteMetadata, loadedSheets, width, height, isHovering]);
+    // Update the rendered sheets set
+    if (newlyRendered.size > 0) {
+      setRenderedSheets(prev => new Set([...prev, ...newlyRendered]));
+    }
+
+  }, [spriteMetadata, loadedSheets, renderedSheets]);
 
   // Simple pointer handling
   const handlePointerMove = (e: React.MouseEvent | React.TouchEvent) => {
