@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
+import SinglePngMosaicImage from '@/features/mosaic/components/SinglePngMosaicImage';
 import SpriteSheetMosaicImageFixed from '@/features/mosaic/components/SpriteSheetMosaicImageFixed';
 import MarkdownContent from '@/components/MarkdownContent';
 import { getHomeContent } from '@/lib/content';

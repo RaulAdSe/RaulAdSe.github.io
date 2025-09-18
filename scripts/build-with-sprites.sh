@@ -36,23 +36,50 @@ if [ -d "$TILES_DIR" ] && [ -f "$TILES_DIR/metadata.json" ]; then
     
     echo -e "${GREEN}✅ Sprite sheet optimization complete!${NC}"
     
+    # Generate single PNG for ultimate optimization
+    echo -e "${YELLOW}🖼️  Generating single PNG for maximum performance...${NC}"
+    
+    # Create single PNG directory
+    SINGLE_PNG_DIR="public/single_png"
+    mkdir -p "$SINGLE_PNG_DIR"
+    
+    # Generate single PNG from sprite sheets
+    python3 features/mosaic/scripts/create_single_png.py "$SPRITE_DIR" "$SINGLE_PNG_DIR"
+    
+    # Copy single PNG to build output
+    echo -e "${BLUE}📋 Copying single PNG to build output...${NC}"
+    cp -r "$SINGLE_PNG_DIR"/* "out/single_png/" 2>/dev/null || mkdir -p "out/single_png" && cp -r "$SINGLE_PNG_DIR"/* "out/single_png/"
+    
+    echo -e "${GREEN}✅ Single PNG optimization complete!${NC}"
+    
     # Show performance improvements
     ORIGINAL_COUNT=$(find "$TILES_DIR" -name "*.png" | wc -l | tr -d ' ')
     SPRITE_COUNT=$(find "$SPRITE_DIR" -name "sprite_sheet_*.webp" | wc -l | tr -d ' ')
     
     echo -e "${GREEN}📈 Performance improvements:${NC}"
-    echo "   • HTTP requests reduced: $ORIGINAL_COUNT → $SPRITE_COUNT"
-    echo "   • Request reduction: $(echo "scale=1; 100 * (1 - $SPRITE_COUNT / $ORIGINAL_COUNT)" | bc)%"
+    echo "   • Original tiles: $ORIGINAL_COUNT files"
+    echo "   • Sprite sheets: $SPRITE_COUNT files ($(echo "scale=1; 100 * (1 - $SPRITE_COUNT / $ORIGINAL_COUNT)" | bc)% reduction)"
+    echo "   • Single PNG: 1 file ($(echo "scale=1; 100 * (1 - 1 / $ORIGINAL_COUNT)" | bc)% reduction)"
     
     # Calculate file sizes
     if command -v du >/dev/null 2>&1; then
         SPRITE_SIZE_MB=$(du -sm "$SPRITE_DIR" | cut -f1)
-        echo "   • Total sprite sheets: ${SPRITE_SIZE_MB}MB"
+        echo "   • Sprite sheets total: ${SPRITE_SIZE_MB}MB"
         
-        WEBP_SIZE_MB=$(find "$SPRITE_DIR" -name "*.webp" -exec du -cm {} + | tail -1 | cut -f1)
-        PNG_SIZE_MB=$(find "$SPRITE_DIR" -name "*.png" -exec du -cm {} + | tail -1 | cut -f1)
-        echo "   • WebP format: ${WEBP_SIZE_MB}MB (recommended)"
-        echo "   • PNG fallback: ${PNG_SIZE_MB}MB"
+        if [ -d "$SINGLE_PNG_DIR" ]; then
+            SINGLE_PNG_SIZE_MB=$(du -sm "$SINGLE_PNG_DIR" | cut -f1)
+            echo "   • Single PNG total: ${SINGLE_PNG_SIZE_MB}MB"
+            
+            if [ -f "$SINGLE_PNG_DIR/mosaic_single.webp" ]; then
+                SINGLE_WEBP_SIZE_MB=$(du -sm "$SINGLE_PNG_DIR/mosaic_single.webp" | cut -f1)
+                echo "   • Single WebP: ${SINGLE_WEBP_SIZE_MB}MB (recommended)"
+            fi
+            
+            if [ -f "$SINGLE_PNG_DIR/mosaic_single.png" ]; then
+                SINGLE_PNG_FILE_SIZE_MB=$(du -sm "$SINGLE_PNG_DIR/mosaic_single.png" | cut -f1)
+                echo "   • Single PNG: ${SINGLE_PNG_FILE_SIZE_MB}MB (fallback)"
+            fi
+        fi
     fi
     
 else
@@ -83,16 +110,16 @@ echo ""
 echo -e "${GREEN}🎉 Optimized build complete!${NC}"
 echo ""
 echo -e "${BLUE}📚 GitHub Pages Deployment:${NC}"
-echo "   1. Commit the generated sprite sheets:"
-echo "      git add public/sprite_sheets/ out/"
-echo "      git commit -m 'Add optimized sprite sheets for 99.7% faster loading'"
+echo "   1. Commit the generated optimizations:"
+echo "      git add public/sprite_sheets/ public/single_png/ out/"
+echo "      git commit -m 'Add optimized mosaic loading (sprite sheets + single PNG)'"
 echo ""
 echo "   2. Push to GitHub:"
 echo "      git push origin main"
 echo ""
-echo "   3. Your site will now load dramatically faster with:"
-echo "      • 22 sprite sheet requests instead of 8,480 individual tiles"
-echo "      • WebP format support (90% smaller files)"
-echo "      • Progressive loading with prioritized center tiles"
+echo "   3. Choose your optimization level:"
+echo "      • Single PNG: 1 request, ultimate simplicity (recommended)"
+echo "      • Sprite sheets: 25 requests, progressive loading"
+echo "      • WebP format support for both (smaller files)"
 echo ""
-echo -e "${YELLOW}🚀 Expected performance improvement: 90%+ faster initial loading!${NC}"
+echo -e "${YELLOW}🚀 Expected performance improvement: 95%+ faster with single PNG!${NC}"

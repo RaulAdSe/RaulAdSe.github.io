@@ -56,3 +56,4 @@ __pycache__/
 
 # Sprite sheets (exclude duplicates, keep only WebP in public)
 sprite_sheets/
+public/single_png/
