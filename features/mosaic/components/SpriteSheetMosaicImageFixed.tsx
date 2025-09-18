@@ -350,13 +350,29 @@ export default function SpriteSheetMosaicImageFixed({
     const zoomCtx = zoomCanvas.getContext('2d');
     if (!zoomCtx) return;
 
-    // Set zoom canvas to display size for crisp rendering
+    // Browser-specific zoom canvas sizing - keep Safari stable, boost Chrome/Firefox
     const zoomFactor = 20;
     const displayWidth = width;
     const displayHeight = height;
     
-    zoomCanvas.width = displayWidth;
-    zoomCanvas.height = displayHeight;
+    // Detect browser for quality optimization
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    
+    let canvasScale;
+    if (isSafari) {
+      // Safari: Keep current stable quality (no changes)
+      canvasScale = 1;
+    } else {
+      // Chrome/Firefox: Higher resolution for better tile quality
+      canvasScale = Math.min(3, devicePixelRatio * 1.5); // 1.5-3x scale
+    }
+    
+    const canvasWidth = Math.floor(displayWidth * canvasScale);
+    const canvasHeight = Math.floor(displayHeight * canvasScale);
+    
+    zoomCanvas.width = canvasWidth;
+    zoomCanvas.height = canvasHeight;
 
     // Calculate zoom area in the original mosaic coordinates
     const zoomAreaSize = 0.05; // 5% of the image (1/20th since we're zooming 20x)
@@ -377,23 +393,27 @@ export default function SpriteSheetMosaicImageFixed({
     const sourceRightPx = Math.ceil(sourceRight * mosaicWidth);
     const sourceBottomPx = Math.ceil(sourceBottom * mosaicHeight);
     
-    // High-quality rendering settings for zoom
-    zoomCtx.imageSmoothingEnabled = false; // Pixelated for mosaic effect when zoomed
+    // High-quality crisp rendering settings for zoom
+    zoomCtx.imageSmoothingEnabled = true; // Smooth and crisp rendering
     if ('imageSmoothingQuality' in zoomCtx) {
       (zoomCtx as any).imageSmoothingQuality = 'high';
     }
 
     // Clear zoom canvas
-    zoomCtx.clearRect(0, 0, displayWidth, displayHeight);
+    zoomCtx.clearRect(0, 0, canvasWidth, canvasHeight);
 
-    // Calculate tile size for zoom rendering - much higher resolution
-    const zoomTileSize = Math.max(8, Math.min(50, (displayWidth * zoomFactor) / mosaicWidth));
+    // Calculate tile size based on canvas resolution - higher for Chrome/Firefox
+    const baseTileSize = (canvasWidth * zoomFactor) / mosaicWidth;
+    const maxTileSize = isSafari ? 50 : 120; // Safari: 50px, Chrome/Firefox: 120px
+    const zoomTileSize = Math.max(8, Math.min(maxTileSize, baseTileSize));
     
-    console.log(`🔍 Canvas zoom rendering:`, {
-      zoomArea: { sourceLeftPx, sourceTopPx, sourceRightPx, sourceBottomPx },
+    console.log(`🔍 Canvas zoom rendering (${isSafari ? 'Safari' : 'Chrome/Firefox'}):`, {
+      browser: isSafari ? 'Safari' : 'Chrome/Firefox',
+      canvasScale,
+      maxTileSize,
       zoomTileSize,
-      mousePos,
-      canvasSize: { width: displayWidth, height: displayHeight }
+      displaySize: { width: displayWidth, height: displayHeight },
+      canvasSize: { width: canvasWidth, height: canvasHeight }
     });
 
     // Render only tiles in the zoom area at high resolution
@@ -412,8 +432,8 @@ export default function SpriteSheetMosaicImageFixed({
             const relativeX = (tilePos.x - sourceLeftPx) / (sourceRightPx - sourceLeftPx);
             const relativeY = (tilePos.y - sourceTopPx) / (sourceBottomPx - sourceTopPx);
             
-            const zoomCanvasX = relativeX * displayWidth;
-            const zoomCanvasY = relativeY * displayHeight;
+            const zoomCanvasX = relativeX * canvasWidth;
+            const zoomCanvasY = relativeY * canvasHeight;
             
             zoomCtx.drawImage(
               spriteSheet,
@@ -508,7 +528,13 @@ export default function SpriteSheetMosaicImageFixed({
               if (ctx) {
                 el.width = width;
                 el.height = height;
-                ctx.drawImage(zoomCanvas, 0, 0);
+                // High-quality smooth scaling
+                ctx.imageSmoothingEnabled = true;
+                if ('imageSmoothingQuality' in ctx) {
+                  (ctx as any).imageSmoothingQuality = 'high';
+                }
+                // Scale down high-res canvas to display size for crisp rendering
+                ctx.drawImage(zoomCanvas, 0, 0, zoomCanvas.width, zoomCanvas.height, 0, 0, width, height);
               }
             }
           }}
@@ -519,7 +545,7 @@ export default function SpriteSheetMosaicImageFixed({
             position: 'absolute',
             top: 0,
             left: 0,
-            imageRendering: 'pixelated', // Sharp pixel edges for zoom effect
+            imageRendering: 'auto', // High-quality smooth rendering
             opacity: 1,
             transition: 'opacity 0.2s ease-out',
             backfaceVisibility: 'hidden',
