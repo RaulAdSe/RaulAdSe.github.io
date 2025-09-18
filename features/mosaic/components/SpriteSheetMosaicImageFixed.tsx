@@ -66,6 +66,7 @@ export default function SpriteSheetMosaicImageFixed({
   const [supportsWebP, setSupportsWebP] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
+  const [zoomCanvas, setZoomCanvas] = useState<HTMLCanvasElement | null>(null);
 
   // Universal WebP detection for all browsers
   useEffect(() => {
@@ -75,8 +76,10 @@ export default function SpriteSheetMosaicImageFixed({
       canvas.height = 1;
       const dataURL = canvas.toDataURL('image/webp');
       const isSupported = dataURL.startsWith('data:image/webp');
+      const browserInfo = /^((?!chrome|android).)*safari/i.test(navigator.userAgent) ? 'Safari' : 
+                         navigator.userAgent.includes('Firefox') ? 'Firefox' : 'Chrome';
       setSupportsWebP(isSupported);
-      console.log('🖼️ WebP support detected:', isSupported);
+      console.log(`🖼️ ${browserInfo} WebP support:`, isSupported, isSupported ? '(will load .webp files)' : '(will load .png files)');
     };
     checkWebPSupport();
   }, []);
@@ -160,6 +163,7 @@ export default function SpriteSheetMosaicImageFixed({
             
             await new Promise<void>((resolve) => {
               img.onload = () => {
+                console.log(`✅ Loaded ${preferredFilename} (${supportsWebP ? 'WebP' : 'PNG'} preferred)`);
                 sheetMap.set(preferredFilename, img);
                 setLoadedSheets(new Map(sheetMap)); // Trigger re-render
                 resolve();
@@ -170,7 +174,8 @@ export default function SpriteSheetMosaicImageFixed({
                 console.warn(`Failed to load ${preferredFilename}, trying fallback ${fallbackFilename}`);
                 const fallbackImg = new globalThis.Image();
                 fallbackImg.onload = () => {
-                  sheetMap.set(fallbackFilename, img);
+                  console.log(`⚠️ Fallback loaded ${fallbackFilename} (${!supportsWebP ? 'WebP' : 'PNG'} fallback)`);
+                  sheetMap.set(fallbackFilename, fallbackImg);
                   setLoadedSheets(new Map(sheetMap));
                   resolve();
                 };
@@ -199,13 +204,17 @@ export default function SpriteSheetMosaicImageFixed({
     loadEverything();
   }, [useCifarMosaic, mosaicTilesPath, supportsWebP]);
 
-  // Initialize canvas once when metadata loads
+  // Initialize canvases once when metadata loads
   useEffect(() => {
     if (!canvasRef.current || !spriteMetadata) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    // Create zoom canvas for high-quality zoom rendering
+    const zoomCanvasElement = document.createElement('canvas');
+    setZoomCanvas(zoomCanvasElement);
 
     // Browser-optimized canvas setup with high quality
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
@@ -214,16 +223,16 @@ export default function SpriteSheetMosaicImageFixed({
     // High-quality base resolution with browser-specific limits
     let baseScale, maxCanvasSize, effectivePixelRatio;
     
+    // Use identical scaling for all browsers - Safari can handle the same quality
+    baseScale = Math.max(25, 6000 / width);
+    effectivePixelRatio = devicePixelRatio;
+    
+    // Only limit canvas size for Safari, but use same base quality
     if (isSafari) {
-      // Safari-specific optimizations
-      baseScale = Math.max(20, 4000 / width);
-      maxCanvasSize = 4096; // Safari limit
-      effectivePixelRatio = Math.min(devicePixelRatio, 2); // Cap for stability
+      maxCanvasSize = 4096; // Safari's memory limit
+      console.log('🍎 Safari: Using universal quality with 4096px limit');
     } else {
-      // Chrome/Firefox can handle higher quality
-      baseScale = Math.max(25, 6000 / width);
       maxCanvasSize = 8192; // Higher limit for modern browsers
-      effectivePixelRatio = devicePixelRatio;
     }
     
     let scale = baseScale * effectivePixelRatio;
@@ -242,6 +251,15 @@ export default function SpriteSheetMosaicImageFixed({
       });
     }
     
+    // Log final canvas dimensions and quality settings
+    console.log(`📐 Canvas setup (${isSafari ? 'Safari' : 'Modern browser'}):`, {
+      displaySize: { width, height },
+      canvasSize: { width: internalWidth, height: internalHeight },
+      baseScale,
+      effectivePixelRatio,
+      finalScale: scale
+    });
+    
     // Validate canvas dimensions before setting
     try {
       canvas.width = internalWidth;
@@ -254,10 +272,19 @@ export default function SpriteSheetMosaicImageFixed({
       canvas.height = height * 10;
     }
 
-    // High-quality rendering settings
+    // High-quality rendering settings - especially important for Safari
     ctx.imageSmoothingEnabled = true; // Always smooth for better quality
     if ('imageSmoothingQuality' in ctx) {
       (ctx as any).imageSmoothingQuality = 'high';
+    }
+    
+    // Safari-specific context optimizations
+    if (isSafari) {
+      console.log('🍎 Safari: Enhanced canvas quality settings applied');
+      ctx.globalCompositeOperation = 'source-over';
+      if ('textRenderingOptimization' in ctx) {
+        (ctx as any).textRenderingOptimization = 'optimizeQuality';
+      }
     }
     
     // Clear canvas once - no more clearing during loading!
@@ -316,6 +343,92 @@ export default function SpriteSheetMosaicImageFixed({
 
   }, [spriteMetadata, loadedSheets, renderedSheets]);
 
+  // Canvas-native zoom rendering for high quality
+  useEffect(() => {
+    if (!zoomCanvas || !canvasRef.current || !spriteMetadata || !isHovering || loadedSheets.size === 0) return;
+
+    const zoomCtx = zoomCanvas.getContext('2d');
+    if (!zoomCtx) return;
+
+    // Set zoom canvas to display size for crisp rendering
+    const zoomFactor = 20;
+    const displayWidth = width;
+    const displayHeight = height;
+    
+    zoomCanvas.width = displayWidth;
+    zoomCanvas.height = displayHeight;
+
+    // Calculate zoom area in the original mosaic coordinates
+    const zoomAreaSize = 0.05; // 5% of the image (1/20th since we're zooming 20x)
+    const centerX = mousePos.x;
+    const centerY = mousePos.y;
+    
+    const sourceLeft = Math.max(0, centerX - zoomAreaSize / 2);
+    const sourceTop = Math.max(0, centerY - zoomAreaSize / 2);
+    const sourceRight = Math.min(1, centerX + zoomAreaSize / 2);
+    const sourceBottom = Math.min(1, centerY + zoomAreaSize / 2);
+    
+    // Convert to actual mosaic coordinates
+    const mosaicWidth = spriteMetadata.original_metadata.width;
+    const mosaicHeight = spriteMetadata.original_metadata.height;
+    
+    const sourceLeftPx = Math.floor(sourceLeft * mosaicWidth);
+    const sourceTopPx = Math.floor(sourceTop * mosaicHeight);
+    const sourceRightPx = Math.ceil(sourceRight * mosaicWidth);
+    const sourceBottomPx = Math.ceil(sourceBottom * mosaicHeight);
+    
+    // High-quality rendering settings for zoom
+    zoomCtx.imageSmoothingEnabled = false; // Pixelated for mosaic effect when zoomed
+    if ('imageSmoothingQuality' in zoomCtx) {
+      (zoomCtx as any).imageSmoothingQuality = 'high';
+    }
+
+    // Clear zoom canvas
+    zoomCtx.clearRect(0, 0, displayWidth, displayHeight);
+
+    // Calculate tile size for zoom rendering - much higher resolution
+    const zoomTileSize = Math.max(8, Math.min(50, (displayWidth * zoomFactor) / mosaicWidth));
+    
+    console.log(`🔍 Canvas zoom rendering:`, {
+      zoomArea: { sourceLeftPx, sourceTopPx, sourceRightPx, sourceBottomPx },
+      zoomTileSize,
+      mousePos,
+      canvasSize: { width: displayWidth, height: displayHeight }
+    });
+
+    // Render only tiles in the zoom area at high resolution
+    spriteMetadata.sheets.forEach(sheet => {
+      const webpFilename = sheet.filename_webp;
+      const pngFilename = sheet.filename_png;
+      const spriteSheet = loadedSheets.get(webpFilename) || loadedSheets.get(pngFilename);
+      
+      if (spriteSheet && spriteSheet.complete) {
+        sheet.tile_positions.forEach(tilePos => {
+          // Check if this tile is in the zoom area
+          if (tilePos.x >= sourceLeftPx && tilePos.x <= sourceRightPx &&
+              tilePos.y >= sourceTopPx && tilePos.y <= sourceBottomPx) {
+            
+            // Calculate position in zoom canvas
+            const relativeX = (tilePos.x - sourceLeftPx) / (sourceRightPx - sourceLeftPx);
+            const relativeY = (tilePos.y - sourceTopPx) / (sourceBottomPx - sourceTopPx);
+            
+            const zoomCanvasX = relativeX * displayWidth;
+            const zoomCanvasY = relativeY * displayHeight;
+            
+            zoomCtx.drawImage(
+              spriteSheet,
+              tilePos.sprite_x, tilePos.sprite_y,
+              spriteMetadata.sprite_config.tile_size, spriteMetadata.sprite_config.tile_size,
+              zoomCanvasX, zoomCanvasY,
+              zoomTileSize, zoomTileSize
+            );
+          }
+        });
+      }
+    });
+
+  }, [zoomCanvas, spriteMetadata, loadedSheets, isHovering, mousePos, width, height]);
+
   // Simple pointer handling
   const handlePointerMove = (e: React.MouseEvent | React.TouchEvent) => {
     if (!containerRef.current) return;
@@ -364,7 +477,7 @@ export default function SpriteSheetMosaicImageFixed({
         borderRadius: '8px'
       }}
     >
-      {/* Universal canvas - simple and clean */}
+      {/* Main mosaic canvas */}
       <canvas
         ref={canvasRef}
         style={{
@@ -374,19 +487,47 @@ export default function SpriteSheetMosaicImageFixed({
           position: 'absolute',
           top: 0,
           left: 0,
-          imageRendering: 'auto', // High-quality rendering instead of pixelated
-          transition: 'transform 0.2s ease-out',
-          transform: isHovering 
-            ? `scale(20) translate(${(0.5 - mousePos.x) * 100}%, ${(0.5 - mousePos.y) * 100}%)`
-            : 'scale(1) translate(0, 0)',
-          transformOrigin: 'center center',
+          imageRendering: 'auto',
+          opacity: isHovering ? 0 : 1,
+          transition: 'opacity 0.2s ease-out',
           // Additional quality optimizations
           backfaceVisibility: 'hidden',
           WebkitBackfaceVisibility: 'hidden',
           WebkitFontSmoothing: 'antialiased',
-          filter: 'contrast(1.02) saturate(1.05)' // Slight enhancement for better visual quality
+          filter: 'contrast(1.02) saturate(1.05)'
         }}
       />
+
+      {/* High-quality zoom canvas overlay */}
+      {isHovering && zoomCanvas && (
+        <canvas
+          ref={(el) => {
+            if (el && zoomCanvas) {
+              // Copy zoom canvas content to displayed canvas
+              const ctx = el.getContext('2d');
+              if (ctx) {
+                el.width = width;
+                el.height = height;
+                ctx.drawImage(zoomCanvas, 0, 0);
+              }
+            }
+          }}
+          style={{
+            width: `${width}px`,
+            height: `${height}px`,
+            display: 'block',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            imageRendering: 'pixelated', // Sharp pixel edges for zoom effect
+            opacity: 1,
+            transition: 'opacity 0.2s ease-out',
+            backfaceVisibility: 'hidden',
+            WebkitBackfaceVisibility: 'hidden',
+            filter: 'contrast(1.02) saturate(1.05)'
+          }}
+        />
+      )}
 
       {/* Hidden image for fallback */}
       <Image

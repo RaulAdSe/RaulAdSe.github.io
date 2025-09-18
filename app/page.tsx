@@ -18,11 +18,11 @@ export default function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           {/* Left column: hero + why content */}
           <div className="lg:col-span-2">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:gap-6 mb-6">
+            <div className="flex flex-col md:flex-row md:items-center md:gap-6 mb-6">
           {/* Profile Image */}
-          <div className="flex-shrink-0 mb-6 lg:mb-0 mx-auto lg:mx-0">
+          <div className="flex-shrink-0 mb-6 md:mb-0 mx-auto md:mx-0">
               {/* Mobile-sized portrait */}
-              <div className="block lg:hidden">
+              <div className="block md:hidden">
                 <SpriteSheetMosaicImageFixed
                   src="/profile_3.png"
                   alt="Profile made from dataset images"
@@ -33,7 +33,7 @@ export default function Home() {
                 />
               </div>
               {/* Desktop-sized portrait */}
-              <div className="hidden lg:block">
+              <div className="hidden md:block">
                 <SpriteSheetMosaicImageFixed
                   src="/profile_3.png"
                   alt="Profile made from dataset images"
