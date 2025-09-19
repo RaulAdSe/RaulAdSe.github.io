@@ -98,7 +98,8 @@ export default function SimpleMosaicImage({
               height: '50px',
               border: '5px solid rgba(0, 0, 0, 0.1)',
               borderRadius: '50%',
-              borderTopColor: '#2E2D29'
+              borderTopColor: '#2E2D29',
+              animation: 'spin 1s linear infinite'
             }}
           />
         </div>
