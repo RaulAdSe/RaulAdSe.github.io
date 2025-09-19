@@ -5,7 +5,6 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
-    "build:optimized": "./scripts/build-with-sprites.sh",
     "start": "next start"
   },
   "dependencies": {

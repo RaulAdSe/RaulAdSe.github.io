@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
-import SinglePngMosaicImage from '@/features/mosaic/components/SinglePngMosaicImage';
-import SpriteSheetMosaicImageFixed from '@/features/mosaic/components/SpriteSheetMosaicImageFixed';
+import SimpleMosaicImage from '@/mosaic/SimpleMosaicImage';
 import MarkdownContent from '@/components/MarkdownContent';
 import { getHomeContent } from '@/lib/content';
 import { getSortedPostsData } from '@/lib/posts';
@@ -24,24 +23,22 @@ export default function Home() {
           <div className="flex-shrink-0 mb-6 md:mb-0 mx-auto md:mx-0">
               {/* Mobile-sized portrait */}
               <div className="block md:hidden">
-                <SpriteSheetMosaicImageFixed
+                <SimpleMosaicImage
                   src="/profile_3.png"
                   alt="Profile made from dataset images"
                   width={220}
                   height={325}
-                  useCifarMosaic={true}
-                  mosaicTilesPath="/sprite_sheets"
+                  mosaicSrc="/dog_mosaic.png"
                 />
               </div>
               {/* Desktop-sized portrait */}
               <div className="hidden md:block">
-                <SpriteSheetMosaicImageFixed
+                <SimpleMosaicImage
                   src="/profile_3.png"
                   alt="Profile made from dataset images"
                   width={220}
                   height={325}
-                  useCifarMosaic={true}
-                  mosaicTilesPath="/sprite_sheets"
+                  mosaicSrc="/dog_mosaic.png"
                 />
               </div>
           </div>
