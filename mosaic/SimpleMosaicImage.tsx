@@ -35,7 +35,7 @@ export default function SimpleMosaicImage({
 
   return (
     <div 
-      className={`relative overflow-hidden ${className}`}
+      className={`relative overflow-hidden group ${className}`}
       style={{
         width: `${width}px`,
         height: `${height}px`,
@@ -44,7 +44,7 @@ export default function SimpleMosaicImage({
     >
       {/* Loading Spinner */}
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center">
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
           <div 
             className="animate-spin"
             style={{
@@ -60,36 +60,40 @@ export default function SimpleMosaicImage({
 
       {/* Display mosaic if available, otherwise show original image */}
       {mosaicSrc ? (
-        <Image
-          src={mosaicSrc}
-          alt={`${alt} - Dog mosaic`}
-          width={width}
-          height={height}
-          priority
-          onLoad={handleImageLoad}
-          onError={handleImageError}
-          className="w-full h-full object-cover"
-          style={{
-            imageRendering: 'pixelated',
-            opacity: imageLoaded ? 1 : 0,
-            transition: 'opacity 0.3s ease-out'
-          }}
-        />
+        <div className="absolute inset-0 w-full h-full">
+          <Image
+            src={mosaicSrc}
+            alt={`${alt} - Dog mosaic`}
+            width={width}
+            height={height}
+            priority
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+            className="w-full h-full object-cover transition-transform duration-[350ms] ease-out will-change-transform group-hover:scale-110"
+            style={{
+              imageRendering: 'pixelated',
+              opacity: imageLoaded ? 1 : 0,
+              transition: 'transform 0.35s ease-out, opacity 0.3s ease-out'
+            }}
+          />
+        </div>
       ) : (
-        <Image
-          src={src}
-          alt={alt}
-          width={width}
-          height={height}
-          priority
-          onLoad={handleImageLoad}
-          onError={handleImageError}
-          className="w-full h-full object-cover"
-          style={{
-            opacity: imageLoaded ? 1 : 0,
-            transition: 'opacity 0.3s ease-out'
-          }}
-        />
+        <div className="absolute inset-0 w-full h-full">
+          <Image
+            src={src}
+            alt={alt}
+            width={width}
+            height={height}
+            priority
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+            className="w-full h-full object-cover transition-transform duration-[350ms] ease-out will-change-transform group-hover:scale-110"
+            style={{
+              opacity: imageLoaded ? 1 : 0,
+              transition: 'transform 0.35s ease-out, opacity 0.3s ease-out'
+            }}
+          />
+        </div>
       )}
     </div>
   );
