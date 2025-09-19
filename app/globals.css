@@ -29,14 +29,9 @@ body {
 }
 
 @layer components {
-  /* Hover zoom effect - keep container fixed, zoom content only */
+  /* Dynamic zoom effect - container stays fixed, cursor-following zoom */
   .group {
     overflow: hidden !important;
-  }
-  
-  .group:hover .group-hover\:scale-110 {
-    transform: scale(17.0) !important;     /* 16x zoom */
-    transform-origin: center center !important;
   }
 
   .prose {

@@ -22,6 +22,8 @@ export default function SimpleMosaicImage({
 }: SimpleMosaicImageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 0.5, y: 0.5 });
+  const [isHovered, setIsHovered] = useState(false);
 
   // Handle image loading
   const handleImageLoad = () => {
@@ -33,6 +35,47 @@ export default function SimpleMosaicImage({
     setIsLoading(false);
   };
 
+  // Handle mouse movement for dynamic zoom
+  const handleMouseMove = (e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    setMousePosition({ 
+      x: Math.max(0, Math.min(1, x)), 
+      y: Math.max(0, Math.min(1, y)) 
+    });
+  };
+
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+  };
+
+  // Calculate dynamic transform based on mouse position
+  const getTransform = () => {
+    if (!isHovered) return 'scale(1)';
+    
+    const scale = 17.0;
+    
+    // Calculate maximum safe offset based on actual container dimensions
+    // At scale 17x, the image is 17 times bigger, so it can move (16/17) of its size
+    const maxOffsetX = (width * (scale - 1)) / (2 * scale);
+    const maxOffsetY = (height * (scale - 1)) / (2 * scale);
+    
+    // Calculate raw offset based on cursor position
+    const rawOffsetX = (0.5 - mousePosition.x) * maxOffsetX * 2;
+    const rawOffsetY = (0.5 - mousePosition.y) * maxOffsetY * 2;
+    
+    // Clamp offsets within safe boundaries (much more generous now)
+    const offsetX = Math.max(-maxOffsetX, Math.min(maxOffsetX, rawOffsetX));
+    const offsetY = Math.max(-maxOffsetY, Math.min(maxOffsetY, rawOffsetY));
+    
+    return `scale(${scale}) translate(${offsetX}px, ${offsetY}px)`;
+  };
+
   return (
     <div 
       className={`relative overflow-hidden group ${className}`}
@@ -41,6 +84,9 @@ export default function SimpleMosaicImage({
         height: `${height}px`,
         borderRadius: '8px'
       }}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       {/* Loading Spinner */}
       {isLoading && (
@@ -69,11 +115,12 @@ export default function SimpleMosaicImage({
             priority
             onLoad={handleImageLoad}
             onError={handleImageError}
-            className="w-full h-full object-cover transition-transform duration-[350ms] ease-out will-change-transform group-hover:scale-110"
+            className="w-full h-full object-cover transition-transform duration-[350ms] ease-out will-change-transform"
             style={{
               imageRendering: 'pixelated',
               opacity: imageLoaded ? 1 : 0,
-              transition: 'transform 0.35s ease-out, opacity 0.3s ease-out'
+              transition: 'transform 0.35s ease-out, opacity 0.3s ease-out',
+              transform: getTransform()
             }}
           />
         </div>
@@ -87,10 +134,11 @@ export default function SimpleMosaicImage({
             priority
             onLoad={handleImageLoad}
             onError={handleImageError}
-            className="w-full h-full object-cover transition-transform duration-[350ms] ease-out will-change-transform group-hover:scale-110"
+            className="w-full h-full object-cover transition-transform duration-[350ms] ease-out will-change-transform"
             style={{
               opacity: imageLoaded ? 1 : 0,
-              transition: 'transform 0.35s ease-out, opacity 0.3s ease-out'
+              transition: 'transform 0.35s ease-out, opacity 0.3s ease-out',
+              transform: getTransform()
             }}
           />
         </div>
