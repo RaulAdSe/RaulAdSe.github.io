@@ -7,6 +7,9 @@ status: "published"
 tags: ["startups", "enterprise", "demos", "barcelona", "a16z"]
 ---
 
+------
+
+
 Picture this: You want to try new software. You fill out a form. Wait 3 days. Schedule a call for next week. Sit through 45 minutes of someone screen-sharing who doesn't know if their product actually solves your problem.
 
 It's 2025 and we're still doing demos like it's 1999.
