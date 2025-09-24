@@ -142,7 +142,7 @@ This is what second-time founders look like when they've learned from round one:
 
 The software demo is dead. These guys killed it. And unlike most "disruptors," they've actually disrupted before.
 
-The takeaway? When engineers who've already won once decide to build again, pay attention. They're not experimenting anymore. They're executing.
+<p class="normal">The takeaway? When engineers who've already won once decide to build again, pay attention. They're not experimenting anymore. They're executing.</p>
 ---
 
 *P.S. - That GitHub repo I reverse-engineered? [Check it out](https://github.com/adriablancafort/software-demo-realtime-voice-agent). Building your own version is the best way to understand the magic.*

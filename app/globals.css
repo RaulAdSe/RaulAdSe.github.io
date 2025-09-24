@@ -199,11 +199,24 @@ body {
     width: 60%;
   }
 
-  /* Center the caption (italic paragraph) immediately after an image */
-  .prose p:has(> img) + p {
+  /* Center only when the immediate next paragraph is italic (caption) */
+  .prose p:has(> img) + p:has(> em) {
     text-align: center;
-    color: rgb(107 114 128); /* text-gray-500 */
+    color: rgb(107 114 128);
     font-size: 0.95rem;
-    margin-top: -0.5rem; /* pull caption closer to image */
+    margin-top: -0.5rem;
+  }
+  .prose p:has(> img) + p:has(> em) em {
+    display: block;
+    font-style: italic;
+  }
+
+  /* Force normal styling when explicitly marked */
+  .prose p.normal {
+    text-align: left;
+    color: inherit;
+    font-size: 1rem;
+    margin-top: 1rem;
+    font-style: normal;
   }
 }
