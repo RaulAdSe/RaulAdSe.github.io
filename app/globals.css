@@ -95,6 +95,10 @@ body {
     border-radius: 0.5rem;
     overflow-x: auto;
     margin-bottom: 1rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    line-height: 1.1; /* tighter to keep box-drawing aligned */
+    letter-spacing: 0; /* avoid widening lines */
+    white-space: pre; /* preserve spaces exactly */
   }
   
   .dark .prose pre {
@@ -104,6 +108,8 @@ body {
   .prose pre code {
     background-color: transparent;
     padding: 0;
+    font-family: inherit;
+    font-size: 0.95rem; /* slightly smaller to reduce wrapping */
   }
   
   .prose blockquote {
@@ -178,5 +184,26 @@ body {
     100% {
       background-position: 200% 0;
     }
+  }
+
+  /* Center images in blog posts */
+  .prose img {
+    display: block;
+    margin: 2rem auto;
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Render Supersonik image at 60% without re-encoding */
+  .prose img[src="/supersonik.jpeg"] {
+    width: 60%;
+  }
+
+  /* Center the caption (italic paragraph) immediately after an image */
+  .prose p:has(> img) + p {
+    text-align: center;
+    color: rgb(107 114 128); /* text-gray-500 */
+    font-size: 0.95rem;
+    margin-top: -0.5rem; /* pull caption closer to image */
   }
 }
