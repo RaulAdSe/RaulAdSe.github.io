@@ -7,7 +7,7 @@ import { getSortedPostsData } from '@/lib/posts';
 
 export default function Home() {
   const homeContent = getHomeContent();
-  const posts = getSortedPostsData().slice(0, 1);
+  const posts = getSortedPostsData().slice(0, 3);
   
   return (
     <div className="min-h-screen bg-white">

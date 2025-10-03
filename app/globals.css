@@ -73,6 +73,14 @@ body {
     margin-bottom: 1rem;
     margin-left: 1.5rem;
   }
+  
+  .prose ul {
+    list-style-type: disc;
+  }
+  
+  .prose ol {
+    list-style-type: decimal;
+  }
 
   /* Spacing and styling for separators */
   .prose hr {
