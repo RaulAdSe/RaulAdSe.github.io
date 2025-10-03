@@ -24,7 +24,7 @@ Welcome to the invisible crisis that Prosper AI is trying to solve. Not the sexy
 
 ## Setting the Scene: Where Healthcare Tech Meets Luxury Retail
 
-I met Josep Marc (JM) at Prosper's Barcelona office, which shares a building with a high-end jewelry store. 
+I met Josep Marc Mingot (JM) at Prosper's Barcelona office, which shares a building with a high-end jewelry store. 
 
 The aesthetic whiplash is real. You walk past displays of diamond necklaces that cost more than my car, take the elevator up, and suddenly you're in startup land—engineers debugging phone call failures and optimizing containment rates.
 
@@ -88,6 +88,11 @@ I walked into this conversation thinking, "Cool, voice AI for healthcare, how ha
 
 JM proceeded to give me a masterclass in why healthcare voice AI is to regular chatbots what brain surgery is to making a sandwich.
 
+
+![Healthcare Voice AI](/healthcare_voice.png)
+
+
+
 **The fun stuff you're dealing with:**
 
 - **IVRs from 1995** that were probably coded by someone who thought Y2K was gonna end civilization (and might change without warning)
@@ -122,6 +127,41 @@ Even if Prosper captured 10% of the market, that's **400,000 calls per day**.
 (I tried to do the revenue math in my head and my brain just made that Windows error sound.)
 
 The beautiful part? The market is **expanding**, not shrinking. As healthcare systems digitize, call volumes don't decrease—they just... shift. Prior authorizations, eligibility checks, claims follow-ups—all of this still requires phone calls because the infrastructure is fundamentally broken and held together with duct tape and prayers.
+
+
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+         THE HEALTHCARE ADMIN CALL MARKET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TOTAL MARKET (Prosper estimate)
+1.46B calls/year
+████████████████████████████████████████████████████████
+                                                    100%
+
+VERIFIED MINIMUM
+550M calls/year
+████████████████████  ← At minimum, this is the market
+                                                     38%
+
+HANDLED BY HUMANS (struggling)
+~1.4B calls/year
+█████████████████████████████████████████████████████
+- 60% capacity at peak  • 7-20% abandon  • 52% FCR
+                                                     96%
+
+THE OVERFLOW (unanswered)
+50-110M calls/year (conservative)
+███  ← Prosper's wedge: calls that go unanswered
+                                                    3-7%
+
+CURRENTLY AUTOMATED (all players combined)
+<5M calls/year
+█  ← Infinitus (1M) + Notable (0.5M) + Prosper (→2M) + Others (1M)
+                                                     0.3%
+```
+
 
 And JM and Xavier knew this. Not from market research reports, but from living it. From watching the system buckle under its own weight year after year. From seeing the same problems persist despite everyone agreeing they need to be fixed.
 

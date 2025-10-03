@@ -215,6 +215,11 @@ body {
     width: 60%;
   }
 
+  /* Render Healthcare Voice diagram at 50% */
+  .prose img[src="/healthcare_voice.png"] {
+    width: 50%;
+  }
+
   /* Center only when the immediate next paragraph is italic (caption) */
   .prose p:has(> img) + p:has(> em) {
     text-align: center;
